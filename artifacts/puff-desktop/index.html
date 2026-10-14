@@ -1,0 +1,40 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <link rel="icon" href="/favicon.ico" />
+    <meta name="theme-color" content="#000000" />
+    <meta name="og:title" property="og:title" content="Puff Desktop" />
+    <meta
+      name="og:description"
+      property="og:description"
+      content="Puff is a personal, browser-based desktop with a familiar built-in app experience."
+    />
+    <meta name="og:color" content="#303030" />
+    <link rel="apple-touch-icon" href="/favicon.png" />
+    <link rel="manifest" href="/manifest.json" />
+    <meta name="description" content="Puff is your personal desktop in the browser, with a familiar desktop and built-in app experience." />
+    <title>Puff Desktop</title>
+    <link rel="stylesheet" href="/dycalendar.css" />
+  </head>
+  <body>
+    <noscript>You need to enable JavaScript to run this app.</noscript>
+
+    <span id="root"></span>
+
+    <span id="brightoverlay"></span>
+
+    <script type="text/javascript" src="/dycalendar.js"></script>
+    <script src="./src/index.jsx" type="module"></script>
+    <script src="/react-pwa.js"></script>
+
+    <script type="module">
+      console.log(
+        "%cPuff Desktop",
+        "color: lightblue; font-size: medium",
+      );
+    </script>
+  </body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "Puff Desktop",
+  "description": "A personal, browser-based desktop with a familiar built-in app experience",
+  "repository": "https://github.com/elmira-ashrafi/win11-react-desktop",
+  "logo": "https://avatars.githubusercontent.com/u/310684256?v=4",
+  "keywords": ["Puff", "Desktop", "Browser", "React", "Redux", "Vite"],
+  "engines": {
+    "npm": ">=8.x"
+  }
+}

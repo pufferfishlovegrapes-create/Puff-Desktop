@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "Puff Desktop"
+description = "A browser-based desktop simulator with Windows-inspired windows and built-in apps, rebranded as Puff while preserving the original desktop interactions."
+version = "1.0.0"
+id = "artifacts/puff-desktop"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 24913
+
+[services.development]
+run = "pnpm --filter @workspace/puff-desktop run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/puff-desktop", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/puff-desktop/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "24913"
+BASE_PATH = "/"

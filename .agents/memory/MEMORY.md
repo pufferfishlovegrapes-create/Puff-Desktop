@@ -1,0 +1,1 @@
+- [Puff Desktop branding](puff-brand.md) — use Puff as the name for this Windows-style desktop.
