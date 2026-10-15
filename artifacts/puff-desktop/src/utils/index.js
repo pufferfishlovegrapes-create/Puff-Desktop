@@ -1,9 +1,16 @@
-import icons from "./apps";
+import icons, { removedAppNames } from "./apps";
 
+const removedApps = new Set(removedAppNames);
 const getSavedAppList = (key, fallback) => {
   const saved = localStorage.getItem(key);
-  const apps = saved ? JSON.parse(saved) : fallback;
-  return apps.map((name) => (name === "Ali" ? "Puff" : name));
+  const previousApps = saved ? JSON.parse(saved) : fallback;
+  const apps = previousApps
+    .map((name) => (name === "Ali" ? "Puff" : name))
+    .filter((name) => !removedApps.has(String(name).toLowerCase()));
+  if (saved && JSON.stringify(apps) !== JSON.stringify(previousApps)) {
+    localStorage.setItem(key, JSON.stringify(apps));
+  }
+  return apps;
 };
 
 var { taskbar, desktop, pinned, recent } = {
@@ -20,9 +27,6 @@ var { taskbar, desktop, pinned, recent } = {
     "File Explorer",
     "Browser",
     "Mail",
-    "WhatsApp",
-    "LinkedIn",
-    "Github",
     "Notepad",
     "Store",
   ]),
@@ -37,19 +41,14 @@ var { taskbar, desktop, pinned, recent } = {
     "Whiteboard",
     "Calculator",
     "Spotify",
-    "LinkedIn",
     "File Explorer",
     "Terminal",
-    "Github",
     "Discord",
     "Camera",
-    "WhatsApp",
   ]),
   recent: getSavedAppList("recent", [
     "Mail",
-    "LinkedIn",
     "Terminal",
-    "Github",
     "File Explorer",
     "Notepad",
   ]),

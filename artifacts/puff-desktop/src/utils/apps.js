@@ -1,7 +1,16 @@
 export const gene_name = () =>
   Math.random().toString(36).substring(2, 10).toUpperCase();
 
+export const removedAppNames = ["github", "whatsapp", "linkedin"];
+
 let installed = JSON.parse(localStorage.getItem("installed") || "[]");
+const filteredInstalled = installed.filter(
+  (app) => !removedAppNames.includes(String(app.name || "").toLowerCase()),
+);
+if (filteredInstalled.length !== installed.length) {
+  localStorage.setItem("installed", JSON.stringify(filteredInstalled));
+}
+installed = filteredInstalled;
 
 const apps = [
   {
@@ -227,13 +236,6 @@ const apps = [
     type: "app",
   },
   {
-    name: "LinkedIn",
-    icon: "linkedin",
-    type: "app",
-    action: "EXTERNAL",
-    payload: "https://github.com/elmira-ashrafi",
-  },
-  {
     name: "Teams",
     icon: "teams",
     type: "app",
@@ -279,20 +281,6 @@ const apps = [
     name: "Cortana",
     icon: "cortana",
     type: "app",
-  },
-  {
-    name: "Github",
-    icon: "github",
-    type: "app",
-    action: "EXTERNAL",
-    payload: "https://github.com/elmira-ashrafi",
-  },
-  {
-    name: "WhatsApp",
-    icon: "whatsapp",
-    type: "app",
-    action: "EXTERNAL",
-    payload: "https://wa.me/989364230578",
   },
   {
     name: "Unescape",

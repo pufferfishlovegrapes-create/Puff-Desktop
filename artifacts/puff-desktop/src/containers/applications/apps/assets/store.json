@@ -12,18 +12,6 @@
     }
   },
   {
-    "name": "GitHub Portfolio",
-    "icon": "img/icon/github.png",
-    "type": "app",
-    "data": {
-      "type": "IFrame",
-      "url": "https://github.com/elmira-ashrafi",
-      "gallery": [],
-      "desc": "My open-source projects and portfolio work on GitHub. Explore repositories showcasing frontend development, UI engineering, and creative web experiences.",
-      "feat": "Open-source projects\nReact and JavaScript work\nPortfolio repositories\nVersion control with Git"
-    }
-  },
-  {
     "name": "React Docs",
     "icon": "img/icon/edge.png",
     "type": "app",
