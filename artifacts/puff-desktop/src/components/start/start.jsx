@@ -260,14 +260,12 @@ export const StartMenu = () => {
             </div>
           </div>
           <div className="menuBar">
-            <div className="profile handcr">
+            <div className="profile">
               <Icon
-                src="img/asset/profilepic.jpg"
+                src="img/asset/puff-profile.png"
                 ext
                 rounded
                 width={26}
-                click="EXTERNAL"
-                payload="https://github.com/elmira-ashrafi"
               />
               <div className="usName">{userName}</div>
             </div>
