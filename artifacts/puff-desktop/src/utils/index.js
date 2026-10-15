@@ -1,17 +1,21 @@
 import icons from "./apps";
 
+const getSavedAppList = (key, fallback) => {
+  const saved = localStorage.getItem(key);
+  const apps = saved ? JSON.parse(saved) : fallback;
+  return apps.map((name) => (name === "Ali" ? "Puff" : name));
+};
+
 var { taskbar, desktop, pinned, recent } = {
-  taskbar: (localStorage.getItem("taskbar") &&
-    JSON.parse(localStorage.getItem("taskbar"))) || [
+  taskbar: getSavedAppList("taskbar", [
     "Settings",
     "File Explorer",
     "Browser",
     "Store",
     "Spotify",
-  ],
-  desktop: (localStorage.getItem("desktop") &&
-    JSON.parse(localStorage.getItem("desktop"))) || [
-    "Ali",
+  ]),
+  desktop: getSavedAppList("desktop", [
+    "Puff",
     "Recycle Bin",
     "File Explorer",
     "Browser",
@@ -21,9 +25,8 @@ var { taskbar, desktop, pinned, recent } = {
     "Github",
     "Notepad",
     "Store",
-  ],
-  pinned: (localStorage.getItem("pinned") &&
-    JSON.parse(localStorage.getItem("pinned"))) || [
+  ]),
+  pinned: getSavedAppList("pinned", [
     "Browser",
     "Get Started",
     "Task Manager",
@@ -41,16 +44,15 @@ var { taskbar, desktop, pinned, recent } = {
     "Discord",
     "Camera",
     "WhatsApp",
-  ],
-  recent: (localStorage.getItem("recent") &&
-    JSON.parse(localStorage.getItem("recent"))) || [
+  ]),
+  recent: getSavedAppList("recent", [
     "Mail",
     "LinkedIn",
     "Terminal",
     "Github",
     "File Explorer",
     "Notepad",
-  ],
+  ]),
 };
 
 export const taskApps = icons.filter((x) => taskbar.includes(x.name));
