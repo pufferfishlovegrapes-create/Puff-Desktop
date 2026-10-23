@@ -1,6 +1,7 @@
 import path from 'path';
 import react from '@vitejs/plugin-react';
 import { defineConfig } from 'vite';
+import { cpSync, existsSync } from 'node:fs';
 
 import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
 
@@ -26,10 +27,53 @@ if (!basePath) {
   );
 }
 
+function copyScramjetAssets() {
+  const projectRoot = path.resolve(import.meta.dirname);
+  const publicDir = path.resolve(projectRoot, 'public');
+  const scramDest = path.resolve(publicDir, 'scram');
+  const bareDest = path.resolve(publicDir, 'baremux');
+
+  let scramjetSrc: string | null = null;
+  try {
+    const { scramjetPath } = require('@mercuryworkshop/scramjet/path');
+    scramjetSrc = scramjetPath;
+  } catch {
+    // scramjet not installed yet — skip silently
+  }
+
+  let bareMuxSrc: string | null = null;
+  try {
+    bareMuxSrc = require.resolve('@mercuryworkshop/bare-mux').replace(/dist\/index\.(js|cjs|mjs)$/, 'dist');
+  } catch {
+    // bare-mux not installed yet — skip silently
+  }
+
+  if (scramjetSrc && existsSync(scramjetSrc)) {
+    cpSync(scramjetSrc, scramDest, { recursive: true, force: true });
+  }
+  if (bareMuxSrc && existsSync(bareMuxSrc)) {
+    cpSync(bareMuxSrc, bareDest, { recursive: true, force: true });
+  }
+}
+
 export default defineConfig({
   base: basePath,
   plugins: [
     react(),
+    {
+      name: 'copy-scramjet-assets',
+      apply: 'build',
+      buildStart() {
+        copyScramjetAssets();
+      },
+    },
+    {
+      name: 'copy-scramjet-assets-dev',
+      apply: 'serve',
+      configureServer() {
+        copyScramjetAssets();
+      },
+    },
     runtimeErrorOverlay(),
     ...(process.env.NODE_ENV !== 'production' &&
     process.env.REPL_ID !== undefined

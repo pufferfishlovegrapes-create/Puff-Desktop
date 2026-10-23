@@ -1,0 +1,3 @@
+{
+  "_comment": "Vercel does not support WebSocket servers needed by the wisp proxy. Use the Dockerfile with Railway, Render, Fly.io, or any VPS instead. See DEPLOY.md."
+}

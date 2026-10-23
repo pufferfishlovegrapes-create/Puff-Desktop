@@ -3,6 +3,9 @@ import { createRoot } from "react-dom/client";
 import App from "./App";
 import store from "./reducers";
 import { Provider } from "react-redux";
+import { initScramjet } from "./lib/scramjet";
+
+initScramjet().catch((err) => console.error("Scramjet init failed:", err));
 
 const root = createRoot(document.getElementById("root"));
 

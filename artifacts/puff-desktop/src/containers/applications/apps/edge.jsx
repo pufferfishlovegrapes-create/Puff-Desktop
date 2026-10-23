@@ -1,28 +1,23 @@
 import React, { useState, useEffect } from "react";
 import { useSelector, useDispatch } from "react-redux";
 import { Icon, ToolBar, LazyComponent } from "../../../utils/general";
+import { encodeUrl } from "../../../lib/scramjet";
 
 export const EdgeMenu = () => {
   const wnapp = useSelector((state) => state.apps.edge);
-  const [url, setUrl] = useState("https://www.google.com/webhp?igu=1");
-  const [ierror, setErr] = useState(true);
+  const [url, setUrl] = useState("https://www.bing.com");
+  const [proxyUrl, setProxyUrl] = useState(encodeUrl("https://www.bing.com"));
   const [isTyping, setTyping] = useState(false);
-  const [hist, setHist] = useState(["https://bing.com", "https://bing.com"]);
+  const [hist, setHist] = useState(["https://www.bing.com", "https://www.bing.com"]);
   const dispatch = useDispatch();
 
   const iframes = {
-    "https://www.google.com/webhp?igu=1": "Google",
-    "https://github.com/elmira-ashrafi": "My Portfolio",
+    "https://www.bing.com": "Bing",
+    "https://www.google.com": "Google",
+    "https://duckduckgo.com": "DuckDuckGo",
+    "https://github.com": "GitHub",
     "https://react.dev": "React Docs",
-    "https://vitejs.dev": "Vite Docs",
-    "https://quera.org/": "Quera Community",
-    "https://bing.com": "Bing",
-  };
-
-  const favicons = {
-    "https://github.com/elmira-ashrafi": "img/icon/github.png",
-    "https://react.dev": "img/icon/edge.png",
-    "https://vitejs.dev": "img/icon/edge.png",
+    "https://wikipedia.org": "Wikipedia",
   };
 
   const isValidURL = (string) => {
@@ -32,21 +27,24 @@ export const EdgeMenu = () => {
     return res !== null;
   };
 
+  const navigateTo = (target) => {
+    setUrl(target);
+    setProxyUrl(encodeUrl(target));
+    setTyping(false);
+  };
+
   const action = (e) => {
-    var iframe = document.getElementById("isite");
     var x = e.target && e.target.dataset.payload;
 
-    if (iframe && x == 0) {
-      iframe.src = iframe.src;
-    } else if (iframe && x == 1) {
+    if (x == 0) {
+      setProxyUrl(encodeUrl(url));
+    } else if (x == 1) {
       setHist([url, "https://www.bing.com"]);
-      setUrl("https://www.bing.com");
-      setTyping(false);
-    } else if (iframe && x == 2) {
-      setHist([url, "https://www.google.com/webhp?igu=1"]);
-      setUrl("https://www.google.com/webhp?igu=1");
-      setTyping(false);
-    } else if (iframe && x == 3) {
+      navigateTo("https://www.bing.com");
+    } else if (x == 2) {
+      setHist([url, "https://www.google.com"]);
+      navigateTo("https://www.google.com");
+    } else if (x == 3) {
       if (e.key === "Enter") {
         var qry = e.target.value;
 
@@ -60,40 +58,31 @@ export const EdgeMenu = () => {
 
         e.target.value = qry;
         setHist([hist[0], qry]);
-        setUrl(qry);
-        setTyping(false);
+        navigateTo(qry);
       }
     } else if (x == 4) {
-      setUrl(hist[0]);
-      setTyping(false);
+      navigateTo(hist[0]);
     } else if (x == 5) {
-      setUrl(hist[1]);
-      setTyping(false);
+      navigateTo(hist[1]);
     } else if (x == 6) {
       var tmp = e.target.dataset.url;
       setHist([url, tmp]);
-      setUrl(tmp);
-      setTyping(false);
+      navigateTo(tmp);
     }
   };
 
   const typing = (e) => {
     if (!isTyping) {
       setTyping(true);
-      console.log([url, url]);
       setHist([url, url]);
     }
     setUrl(e.target.value);
   };
 
-  const handleFailed = () => {
-    setErr(false);
-  };
-
   useEffect(() => {
     if (wnapp.url) {
       setTyping(false);
-      setUrl(wnapp.url);
+      navigateTo(wnapp.url);
       dispatch({ type: "EDGELINK" });
     }
   });
@@ -196,16 +185,6 @@ export const EdgeMenu = () => {
                     data-payload={6}
                     data-url={mark}
                   >
-                    <Icon
-                      className="mr-1"
-                      ext
-                      width={16}
-                      src={
-                        favicons[mark]
-                          ? favicons[mark]
-                          : new URL(mark).origin + "/favicon.ico"
-                      }
-                    />
                     <div className="text-xs">{iframes[mark].trim()}</div>
                   </div>
                 );
@@ -215,31 +194,13 @@ export const EdgeMenu = () => {
           <div className="siteFrame flex-grow overflow-hidden">
             <LazyComponent show={!wnapp.hide}>
               <iframe
-                src={!isTyping ? url : hist[0]}
+                src={!isTyping ? proxyUrl : encodeUrl(hist[0])}
                 id="isite"
                 frameBorder="0"
                 className="w-full h-full"
                 title="site"
               ></iframe>
             </LazyComponent>
-
-            <div
-              className={`bg-blue-100 w-64 rounded dpShad p-2 absolute bottom-0 right-0 my-4 mx-12 transition-all ${
-                ierror ? "opacity-100" : "opacity-0 pointer-events-none"
-              }`}
-            >
-              <div
-                className="absolute bg-red-400 m-1 text-red-900 text-xs px-1 font-bold handcr top-0 right-0 rounded hover:bg-red-500"
-                onClick={handleFailed}
-              >
-                x
-              </div>
-              <div className="text-gray-800 text-xs font-medium">
-                If it shows <b>"Refused to connect"</b>, then{" "}
-                <b>that website doesn't allow </b>
-                other websites to show their content. <b>I cannot fix it</b>.
-              </div>
-            </div>
           </div>
         </div>
       </div>
