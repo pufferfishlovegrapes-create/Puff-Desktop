@@ -23,34 +23,43 @@ const basePath = process.env.BASE_PATH || "/";
 
 function copyScramjetAssets() {
   const publicDir = path.resolve(projectDir, "public");
-  const scramDest = path.resolve(publicDir, "scram");
-  const bareDest = path.resolve(publicDir, "baremux");
 
-  let scramjetSrc: string | null = null;
+  let scramjetSrc: string;
+  let bareMuxSrc: string;
+  let libcurlSrc: string;
+
   try {
-    const { scramjetPath } = require("@mercuryworkshop/scramjet/path");
-    scramjetSrc = scramjetPath;
+    ({ scramjetPath: scramjetSrc } = require("@mercuryworkshop/scramjet/path"));
   } catch (error) {
-    throw new Error("Unable to locate installed Scramjet assets.", { cause: error });
+    throw new Error("Unable to locate Scramjet assets. Check dependency installation.", { cause: error });
   }
 
-  let bareMuxSrc: string | null = null;
   try {
     bareMuxSrc = path.dirname(require.resolve("@mercuryworkshop/bare-mux"));
   } catch (error) {
-    throw new Error("Unable to locate installed Bare-Mux assets.", { cause: error });
+    throw new Error("Unable to locate Bare-Mux assets. Check dependency installation.", { cause: error });
   }
 
-  if (!scramjetSrc || !existsSync(scramjetSrc)) {
-    throw new Error("Scramjet package did not provide a valid asset directory.");
+  try {
+    ({ libcurlPath: libcurlSrc } = require("@mercuryworkshop/libcurl-transport"));
+  } catch (error) {
+    throw new Error("Unable to locate the Libcurl transport assets. Check dependency installation.", { cause: error });
   }
-  if (!bareMuxSrc || !existsSync(bareMuxSrc)) {
-    throw new Error("Bare-Mux package did not provide a valid asset directory.");
+
+  for (const [name, source] of [
+    ["Scramjet", scramjetSrc],
+    ["Bare-Mux", bareMuxSrc],
+    ["Libcurl transport", libcurlSrc],
+  ] as const) {
+    if (!source || !existsSync(source)) {
+      throw new Error(`${name} asset directory is missing: ${source || "(empty path)"}`);
+    }
   }
 
   mkdirSync(publicDir, { recursive: true });
-  cpSync(scramjetSrc, scramDest, { recursive: true, force: true });
-  cpSync(bareMuxSrc, bareDest, { recursive: true, force: true });
+  cpSync(scramjetSrc, path.join(publicDir, "scram"), { recursive: true, force: true });
+  cpSync(bareMuxSrc, path.join(publicDir, "baremux"), { recursive: true, force: true });
+  cpSync(libcurlSrc, path.join(publicDir, "libcurl"), { recursive: true, force: true });
 }
 
 export default defineConfig({
