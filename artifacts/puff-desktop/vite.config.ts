@@ -9,11 +9,9 @@ import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 const require = createRequire(import.meta.url);
 const projectDir = path.dirname(fileURLToPath(import.meta.url));
 
-const rawPort = process.env.PORT;
-if (!rawPort) {
-  throw new Error("PORT environment variable is required but was not provided.");
-}
-
+// A port is only needed by the dev/preview servers. Production builds should
+// not fail just because the hosting platform does not define PORT at build time.
+const rawPort = process.env.PORT || "5000";
 const port = Number(rawPort);
 if (!Number.isInteger(port) || port <= 0 || port > 65535) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
