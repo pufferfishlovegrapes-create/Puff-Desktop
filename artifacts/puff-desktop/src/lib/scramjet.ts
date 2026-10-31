@@ -18,19 +18,55 @@ async function waitForServiceWorkerController(): Promise<ServiceWorker> {
   return new Promise<ServiceWorker>((resolve, reject) => {
     const timeout = window.setTimeout(() => {
       navigator.serviceWorker.removeEventListener("controllerchange", onChange);
-      reject(new Error("The proxy service worker did not take control. Reload Puff Desktop and try again."));
+      reject(
+        new Error(
+          "The proxy service worker did not take control. Reload Puff Desktop and try again.",
+        ),
+      );
     }, 15000);
 
     const onChange = () => {
-      const controller = navigator.serviceWorker.controller;
-      if (!controller) return;
+      const activeController = navigator.serviceWorker.controller;
+      if (!activeController) return;
       window.clearTimeout(timeout);
       navigator.serviceWorker.removeEventListener("controllerchange", onChange);
-      resolve(controller);
+      resolve(activeController);
     };
 
     navigator.serviceWorker.addEventListener("controllerchange", onChange);
     onChange();
+  });
+}
+
+async function loadScript(src: string): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const existing = Array.from(document.scripts).find(
+      (script) => script.src === new URL(src, location.href).href,
+    );
+
+    if (existing) {
+      if (existing.dataset.loaded === "true") {
+        resolve();
+        return;
+      }
+      existing.addEventListener("load", () => resolve(), { once: true });
+      existing.addEventListener(
+        "error",
+        () => reject(new Error(`Could not load ${src}`)),
+        { once: true },
+      );
+      return;
+    }
+
+    const script = document.createElement("script");
+    script.src = src;
+    script.async = true;
+    script.onload = () => {
+      script.dataset.loaded = "true";
+      resolve();
+    };
+    script.onerror = () => reject(new Error(`Could not load ${src}`));
+    document.head.appendChild(script);
   });
 }
 
@@ -40,45 +76,37 @@ async function initializeScramjet(): Promise<void> {
     location.host +
     "/wisp/";
 
-  const controller = await waitForServiceWorkerController();
-  controller.postMessage({ $scramjet: { type: "initConfig" } });
+  const serviceWorker = await waitForServiceWorkerController();
 
-  const bareMuxResponse = await fetch("/baremux/index.mjs", {
-    cache: "no-store",
-  });
-  if (!bareMuxResponse.ok) {
-    throw new Error("Bare-Mux assets are missing. Check the Puff Desktop build output.");
-  }
+  const requiredAssets = [
+    "/scram/scramjet.all.js",
+    "/scram/scramjet.wasm.wasm",
+    "/baremux/index.mjs",
+    "/baremux/worker.js",
+    "/libcurl/index.mjs",
+  ];
+
+  const checks = await Promise.all(
+    requiredAssets.map(async (asset) => {
+      const response = await fetch(asset, { method: "HEAD", cache: "no-store" });
+      if (!response.ok) {
+        throw new Error(`Required proxy asset is unavailable (${response.status}): ${asset}`);
+      }
+    }),
+  );
+  void checks;
 
   const BareMuxModule = await import("/baremux/index.mjs");
   const connection = new BareMuxModule.BareMuxConnection("/baremux/worker.js");
 
-  const libcurlResponse = await fetch("/baremux/libcurl/index.mjs", {
-    cache: "no-store",
-  }).catch(() => null);
+  // Scramjet 1.1 uses the Bare-Mux transport interface. Libcurl is a
+  // separate package and must be served from /libcurl/, not /baremux/.
+  await connection.setTransport("/libcurl/index.mjs", [{ wisp: wispUrl }]);
 
-  if (libcurlResponse?.ok) {
-    await connection.setTransport("/baremux/libcurl/index.mjs", [
-      { wisp: wispUrl },
-    ]);
-  } else {
-    await connection.setTransport("/baremux/index.mjs", [{ wisp: wispUrl }]);
-  }
-
-  // Wait for the controller bundle to load and initialize before Edge
-  // creates its first proxied iframe.
-  if (typeof $scramjetLoadController !== "function") {
-    await new Promise<void>((resolve, reject) => {
-      const script = document.createElement("script");
-      script.src = "/scram/scramjet.all.js";
-      script.onload = () => resolve();
-      script.onerror = () => reject(new Error("Could not load Scramjet assets."));
-      document.head.appendChild(script);
-    });
-  }
+  await loadScript("/scram/scramjet.all.js");
 
   if (typeof $scramjetLoadController !== "function") {
-    throw new Error("Scramjet controller bundle loaded, but its loader was not found.");
+    throw new Error("Scramjet controller loader was not found in the runtime bundle.");
   }
 
   const { ScramjetController } = $scramjetLoadController();
@@ -91,12 +119,15 @@ async function initializeScramjet(): Promise<void> {
   });
 
   await Promise.resolve(scramjet.init());
+
+  // The controller needs the active worker and transport before navigation.
+  // Do not mark the browser ready until the worker has received its config.
+  serviceWorker.postMessage({ $scramjet: { type: "initConfig" } });
 }
 
 export function initScramjet(): Promise<void> {
   if (!initialization) {
     initialization = initializeScramjet().catch((error) => {
-      // Allow a later retry if initialization fails.
       initialization = null;
       throw error;
     });
