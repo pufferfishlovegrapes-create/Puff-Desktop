@@ -78,6 +78,10 @@ async function initializeScramjet(): Promise<void> {
 
   const serviceWorker = await waitForServiceWorkerController();
 
+  // Initialize the Scramjet service-worker configuration before any proxied
+  // iframe or subresource can be requested.
+  serviceWorker.postMessage({ $scramjet: { type: "initConfig" } });
+
   const requiredAssets = [
     "/scram/scramjet.all.js",
     "/scram/scramjet.wasm.wasm",
@@ -120,9 +124,6 @@ async function initializeScramjet(): Promise<void> {
 
   await Promise.resolve(scramjet.init());
 
-  // The controller needs the active worker and transport before navigation.
-  // Do not mark the browser ready until the worker has received its config.
-  serviceWorker.postMessage({ $scramjet: { type: "initConfig" } });
 }
 
 export function initScramjet(): Promise<void> {
