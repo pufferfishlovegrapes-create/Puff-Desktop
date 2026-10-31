@@ -1,59 +1,56 @@
-import path from 'path';
-import react from '@vitejs/plugin-react';
-import { defineConfig } from 'vite';
-import { cpSync, existsSync } from 'node:fs';
+import path from "node:path";
+import { fileURLToPath } from "node:url";
+import { createRequire } from "node:module";
+import { cpSync, existsSync, mkdirSync } from "node:fs";
+import react from "@vitejs/plugin-react";
+import { defineConfig } from "vite";
+import runtimeErrorOverlay from "@replit/vite-plugin-runtime-error-modal";
 
-import runtimeErrorOverlay from '@replit/vite-plugin-runtime-error-modal';
+const require = createRequire(import.meta.url);
+const projectDir = path.dirname(fileURLToPath(import.meta.url));
 
 const rawPort = process.env.PORT;
-
 if (!rawPort) {
-  throw new Error(
-    'PORT environment variable is required but was not provided.',
-  );
+  throw new Error("PORT environment variable is required but was not provided.");
 }
 
 const port = Number(rawPort);
-
-if (Number.isNaN(port) || port <= 0) {
+if (!Number.isInteger(port) || port <= 0 || port > 65535) {
   throw new Error(`Invalid PORT value: "${rawPort}"`);
 }
 
-const basePath = process.env.BASE_PATH;
-
-if (!basePath) {
-  throw new Error(
-    'BASE_PATH environment variable is required but was not provided.',
-  );
-}
+const basePath = process.env.BASE_PATH || "/";
 
 function copyScramjetAssets() {
-  const projectRoot = path.resolve(import.meta.dirname);
-  const publicDir = path.resolve(projectRoot, 'public');
-  const scramDest = path.resolve(publicDir, 'scram');
-  const bareDest = path.resolve(publicDir, 'baremux');
+  const publicDir = path.resolve(projectDir, "public");
+  const scramDest = path.resolve(publicDir, "scram");
+  const bareDest = path.resolve(publicDir, "baremux");
 
   let scramjetSrc: string | null = null;
   try {
-    const { scramjetPath } = require('@mercuryworkshop/scramjet/path');
+    const { scramjetPath } = require("@mercuryworkshop/scramjet/path");
     scramjetSrc = scramjetPath;
-  } catch {
-    // scramjet not installed yet — skip silently
+  } catch (error) {
+    throw new Error("Unable to locate installed Scramjet assets.", { cause: error });
   }
 
   let bareMuxSrc: string | null = null;
   try {
-    bareMuxSrc = require.resolve('@mercuryworkshop/bare-mux').replace(/dist\/index\.(js|cjs|mjs)$/, 'dist');
-  } catch {
-    // bare-mux not installed yet — skip silently
+    bareMuxSrc = path.dirname(require.resolve("@mercuryworkshop/bare-mux"));
+  } catch (error) {
+    throw new Error("Unable to locate installed Bare-Mux assets.", { cause: error });
   }
 
-  if (scramjetSrc && existsSync(scramjetSrc)) {
-    cpSync(scramjetSrc, scramDest, { recursive: true, force: true });
+  if (!scramjetSrc || !existsSync(scramjetSrc)) {
+    throw new Error("Scramjet package did not provide a valid asset directory.");
   }
-  if (bareMuxSrc && existsSync(bareMuxSrc)) {
-    cpSync(bareMuxSrc, bareDest, { recursive: true, force: true });
+  if (!bareMuxSrc || !existsSync(bareMuxSrc)) {
+    throw new Error("Bare-Mux package did not provide a valid asset directory.");
   }
+
+  mkdirSync(publicDir, { recursive: true });
+  cpSync(scramjetSrc, scramDest, { recursive: true, force: true });
+  cpSync(bareMuxSrc, bareDest, { recursive: true, force: true });
 }
 
 export default defineConfig({
@@ -61,29 +58,27 @@ export default defineConfig({
   plugins: [
     react(),
     {
-      name: 'copy-scramjet-assets',
-      apply: 'build',
+      name: "copy-scramjet-assets",
+      apply: "build",
       buildStart() {
         copyScramjetAssets();
       },
     },
     {
-      name: 'copy-scramjet-assets-dev',
-      apply: 'serve',
+      name: "copy-scramjet-assets-dev",
+      apply: "serve",
       configureServer() {
         copyScramjetAssets();
       },
     },
     runtimeErrorOverlay(),
-    ...(process.env.NODE_ENV !== 'production' &&
+    ...(process.env.NODE_ENV !== "production" &&
     process.env.REPL_ID !== undefined
       ? [
-          await import('@replit/vite-plugin-cartographer').then((m) =>
-            m.cartographer({
-              root: path.resolve(import.meta.dirname, '..'),
-            }),
+          await import("@replit/vite-plugin-cartographer").then((m) =>
+            m.cartographer({ root: path.resolve(projectDir, "..") }),
           ),
-          await import('@replit/vite-plugin-dev-banner').then((m) =>
+          await import("@replit/vite-plugin-dev-banner").then((m) =>
             m.devBanner(),
           ),
         ]
@@ -91,33 +86,26 @@ export default defineConfig({
   ],
   resolve: {
     alias: {
-      '@': path.resolve(import.meta.dirname, 'src'),
-      '@assets': path.resolve(
-        import.meta.dirname,
-        '..',
-        '..',
-        'attached_assets',
-      ),
+      "@": path.resolve(projectDir, "src"),
+      "@assets": path.resolve(projectDir, "..", "..", "attached_assets"),
     },
-    dedupe: ['react', 'react-dom'],
+    dedupe: ["react", "react-dom"],
   },
-  root: path.resolve(import.meta.dirname),
+  root: projectDir,
   build: {
-    outDir: path.resolve(import.meta.dirname, 'dist/public'),
+    outDir: path.resolve(projectDir, "dist/public"),
     emptyOutDir: true,
   },
   server: {
     port,
     strictPort: true,
-    host: '0.0.0.0',
+    host: "0.0.0.0",
     allowedHosts: true,
-    fs: {
-      strict: true,
-    },
+    fs: { strict: true },
   },
   preview: {
     port,
-    host: '0.0.0.0',
+    host: "0.0.0.0",
     allowedHosts: true,
   },
 });
