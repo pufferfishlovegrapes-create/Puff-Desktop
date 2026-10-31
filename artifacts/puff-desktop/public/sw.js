@@ -3,6 +3,15 @@ importScripts("/scram/scramjet.all.js");
 const { ScramjetServiceWorker } = $scramjetLoadWorker();
 const scramjet = new ScramjetServiceWorker();
 
+// Activate updates promptly and let this worker control the first page load.
+self.addEventListener("install", (event) => {
+  event.waitUntil(self.skipWaiting());
+});
+
+self.addEventListener("activate", (event) => {
+  event.waitUntil(self.clients.claim());
+});
+
 self.addEventListener("fetch", (event) => {
   // respondWith must receive a Promise<Response>, not an async function.
   event.respondWith(
