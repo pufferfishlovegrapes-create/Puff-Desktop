@@ -4,11 +4,32 @@ const { ScramjetServiceWorker } = $scramjetLoadWorker();
 const scramjet = new ScramjetServiceWorker();
 
 self.addEventListener("fetch", (event) => {
-  event.respondWith(async () => {
-    await scramjet.loadConfig();
-    if (scramjet.route(event)) {
-      return scramjet.fetch(event);
-    }
-    return fetch(event.request);
-  });
+  // respondWith must receive a Promise<Response>, not an async function.
+  event.respondWith(
+    (async () => {
+      try {
+        await scramjet.loadConfig();
+
+        if (scramjet.route(event)) {
+          return await scramjet.fetch(event);
+        }
+
+        // Requests for Puff Desktop itself (API, assets, etc.) stay on
+        // the app origin. Proxied website requests are handled above.
+        return fetch(event.request);
+      } catch (error) {
+        console.error("[Puff Desktop] Scramjet request failed:", error);
+
+        // Do not retry a failed proxied navigation directly: that would
+        // bypass the proxy and expose the user's normal network request.
+        return new Response(
+          "The proxy could not load this page. Please check the Wisp connection and try again.",
+          {
+            status: 502,
+            headers: { "Content-Type": "text/plain; charset=utf-8" },
+          },
+        );
+      }
+    })(),
+  );
 });
